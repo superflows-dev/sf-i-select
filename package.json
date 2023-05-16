@@ -1,7 +1,7 @@
 {
   "name": "sf-i-select",
   "private": false,
-  "version": "1.0.54",
+  "version": "1.0.80",
   "description": "Superflows Navigation Component",
   "main": "sf-i-select.js",
   "module": "sf-i-select.js",

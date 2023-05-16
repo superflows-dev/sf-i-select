@@ -4,6 +4,21 @@ const validateName = (name) => {
     }
     return false;
 };
+function readCookie(key) {
+    let name = key + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}
 async function callApi(url, data, authorization) {
     return new Promise((resolve) => {
         const jsonData = JSON.stringify(data);
@@ -26,7 +41,7 @@ async function callApi(url, data, authorization) {
     });
 }
 const exportFunctions = {
-    callApi, validateName
+    callApi, validateName, readCookie
 };
 export default exportFunctions;
 //# sourceMappingURL=util.js.map
