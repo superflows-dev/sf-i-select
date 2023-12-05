@@ -25,6 +25,8 @@ export declare class SfISelect extends LitElement {
     selectedId: string[];
     removedValues: string[];
     selectedTextPhrase: string;
+    searchPhrase: string;
+    getPreselectedValues: () => string[];
     selectedIndex: () => number;
     selectedValues: () => any[];
     selectedTexts: () => any[];
@@ -35,6 +37,10 @@ export declare class SfISelect extends LitElement {
     _SfNewC: any;
     _SfInputNew: any;
     _SfInputSelect: any;
+    _SfSearchMultiselectSelect: any;
+    _SfSearchMultiselectInput: any;
+    _SfSearchMultiselectDelete: any;
+    _SfSearchMultiselectSelected: any;
     _SfRowError: any;
     _SfRowErrorMessage: any;
     _SfRowSuccess: any;
@@ -52,6 +58,12 @@ export declare class SfISelect extends LitElement {
     populateList: () => Promise<void>;
     initState: () => Promise<void>;
     constructor();
+    completeSelect: () => void;
+    renderSearchMultiselect: (values: Array<any>, searchString: string) => void;
+    fetchSearchMultiselect: () => Promise<void>;
+    initListenersMultiselect: () => void;
+    checkIfAlreadySelected: (value: string) => boolean;
+    populatePreselected: () => void;
     loadMode: () => Promise<void>;
     protected firstUpdated(_changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>): void;
     connectedCallback(): void;

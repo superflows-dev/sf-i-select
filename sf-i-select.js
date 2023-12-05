@@ -32,6 +32,9 @@ let SfISelect = class SfISelect extends LitElement {
         this.selectedId = [];
         this.removedValues = [];
         this.selectedTextPhrase = "";
+        this.getPreselectedValues = () => {
+            return this.selectedId;
+        };
         this.selectedIndex = () => {
             let index = 0;
             const len = this._SfInputSelect.options.length;
@@ -44,27 +47,47 @@ let SfISelect = class SfISelect extends LitElement {
             return index;
         };
         this.selectedValues = () => {
-            const values = [];
-            const len = this._SfInputSelect.options.length;
-            for (var i = 0; i < len; i++) {
-                const opt = this._SfInputSelect.options[i];
-                if (opt.selected && opt.value != "noselect") {
-                    values.push(opt.value);
+            if (this.mode == "multiselect-dropdown") {
+                const values = [];
+                var divArr = this._SfSearchMultiselectSelected.querySelectorAll('div');
+                for (var i = 0; i < divArr.length; i++) {
+                    values.push(divArr[i].innerHTML);
                 }
+                return values;
             }
-            console.log('returning values', values);
-            return values;
+            else {
+                const values = [];
+                const len = this._SfInputSelect.options.length;
+                for (var i = 0; i < len; i++) {
+                    const opt = this._SfInputSelect.options[i];
+                    if (opt.selected && opt.value != "noselect") {
+                        values.push(opt.value);
+                    }
+                }
+                console.log('returning values', values);
+                return values;
+            }
         };
         this.selectedTexts = () => {
-            const values = [];
-            const len = this._SfInputSelect.options.length;
-            for (var i = 0; i < len; i++) {
-                const opt = this._SfInputSelect.options[i];
-                if (opt.selected && opt.value != "noselect") {
-                    values.push(this._SfInputSelect.options[i].text);
+            if (this.mode == "multiselect-dropdown") {
+                const values = [];
+                var divArr = this._SfSearchMultiselectSelected.querySelectorAll('div');
+                for (var i = 0; i < divArr.length; i++) {
+                    values.push(divArr[i].innerHTML);
                 }
+                return values;
             }
-            return values;
+            else {
+                const values = [];
+                const len = this._SfInputSelect.options.length;
+                for (var i = 0; i < len; i++) {
+                    const opt = this._SfInputSelect.options[i];
+                    if (opt.selected && opt.value != "noselect") {
+                        values.push(this._SfInputSelect.options[i].text);
+                    }
+                }
+                return values;
+            }
         };
         this.clearMessages = () => {
             this._SfRowError.style.display = 'none';
@@ -73,7 +96,9 @@ let SfISelect = class SfISelect extends LitElement {
             this._SfRowSuccessMessage.innerHTML = '';
         };
         this.clearSelection = () => {
-            this._SfInputSelect.value = 'noselect';
+            if (this._SfInputSelect != null) {
+                this._SfInputSelect.value = 'noselect';
+            }
         };
         this.setError = (msg) => {
             this._SfRowError.style.display = 'flex';
@@ -346,17 +371,119 @@ let SfISelect = class SfISelect extends LitElement {
             }
         };
         this.initState = async () => {
-            var _a;
+            var _a, _b;
             console.log('mode', this.mode);
             if (this.flow == "read") {
-                this._sfSelect.setAttribute("disabled", true);
+                (_a = this._sfSelect) === null || _a === void 0 ? void 0 : _a.setAttribute("disabled", true);
             }
             else {
-                (_a = this._sfSelect) === null || _a === void 0 ? void 0 : _a.removeAttribute("disabled");
+                (_b = this._sfSelect) === null || _b === void 0 ? void 0 : _b.removeAttribute("disabled");
+            }
+        };
+        this.completeSelect = () => {
+            var found = false;
+            var divArr = this._SfSearchMultiselectSelected.querySelectorAll('div');
+            for (var i = 0; i < divArr.length; i++) {
+                console.log(divArr[i], divArr[i].innerHTML);
+                if (divArr[i].innerHTML == this._SfSearchMultiselectSelect.value) {
+                    found = true;
+                }
+            }
+            if (!found) {
+                var html = '';
+                html += '<div part="badge-multiselected" class="badge-multiselected">' + this._SfSearchMultiselectSelect.value + '</div>';
+                this._SfSearchMultiselectSelected.insertAdjacentHTML('beforeend', html);
+                this._SfSearchMultiselectInput.value = '';
+                this._SfSearchMultiselectInput.focus();
+                this._SfSearchMultiselectSelect.selectedIndex = 0;
+                this._SfSearchMultiselectSelect.style.display = 'none';
+                this._SfSearchMultiselectDelete.style.display = 'flex';
+                this.dispatchMyEvent("valueChanged", {});
+            }
+        };
+        this.renderSearchMultiselect = (values, searchString) => {
+            var html = '';
+            html += '<option value="noselect">Select</option>';
+            for (var i = 0; i < values.length; i++) {
+                const id = values[i].id;
+                const name = values[i].name;
+                if (name.indexOf(searchString.trim()) >= 0) {
+                    html += '<option value="' + name + ';' + id + '">' + name + '</option>';
+                }
+            }
+            this._SfSearchMultiselectSelect.innerHTML = html;
+        };
+        this.fetchSearchMultiselect = async () => {
+            this.clearMessages();
+            const searchString = this._SfSearchMultiselectInput.value;
+            const body = {};
+            let url = "https://" + this.apiId + ".execute-api.us-east-1.amazonaws.com/test/list";
+            const authorization = btoa(Util.readCookie('email') + ":" + Util.readCookie('accessToken'));
+            const xhr = (await this.prepareXhr(body, url, this._SfLoader, authorization));
+            this._SfLoader.innerHTML = '';
+            if (xhr.status == 200) {
+                const jsonRespose = JSON.parse(xhr.responseText);
+                console.log('multiselected', jsonRespose);
+                this.renderSearchMultiselect(jsonRespose.data.values, searchString);
+                //this.renderSearch(jsonRespose.values, jsonRespose.found, jsonRespose.cursor);
+            }
+            else {
+                const jsonRespose = JSON.parse(xhr.responseText);
+                this.setError(jsonRespose.error);
+            }
+        };
+        this.initListenersMultiselect = () => {
+            this._SfSearchMultiselectInput.addEventListener('keyup', () => {
+                this._SfSearchMultiselectSelect.style.display = 'block';
+                this.fetchSearchMultiselect();
+            });
+            this._SfSearchMultiselectSelect.addEventListener('change', () => {
+                console.log('change');
+                const value = this._SfSearchMultiselectSelect.value;
+                if (value != "" && value != "noselect") {
+                    this.completeSelect();
+                }
+            });
+            this._SfSearchMultiselectDelete.addEventListener('click', () => {
+                this._SfSearchMultiselectSelected.innerHTML = '';
+                this._SfSearchMultiselectDelete.style.display = 'none';
+                this.dispatchMyEvent("valueChanged", {});
+            });
+        };
+        this.checkIfAlreadySelected = (value) => {
+            const arrSelected = this._SfSearchMultiselectSelected.querySelectorAll('div');
+            for (var i = 0; i < arrSelected.length; i++) {
+                if (arrSelected[i].innerHTML == value) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        this.populatePreselected = () => {
+            this._SfSearchMultiselectSelected.innerHTML = '';
+            for (var i = 0; i < this.getPreselectedValues().length; i++) {
+                if (!this.checkIfAlreadySelected(this.getPreselectedValues()[i])) {
+                    var html = '';
+                    html += '<div part="badge-multiselected" class="badge-multiselected">' + this.getPreselectedValues()[i] + '</div>';
+                    this._SfSearchMultiselectSelected.insertAdjacentHTML('beforeend', html);
+                }
+            }
+            console.log(this._SfSearchMultiselectSelected.innerHTML);
+            if (this.getPreselectedValues().length > 0) {
+                this._SfSearchMultiselectDelete.style.display = 'flex';
+            }
+            else {
+                this._SfSearchMultiselectDelete.style.display = 'none';
             }
         };
         this.loadMode = async () => {
-            if (this.mode == "text") {
+            if (this.mode == "multiselect-dropdown") {
+                setTimeout(() => {
+                    this.initListenersMultiselect();
+                    this.populatePreselected();
+                }, 500);
+            }
+            else if (this.mode == "text") {
                 this.selectedTextPhrase = await this.fetchList();
             }
             else {
@@ -373,7 +500,40 @@ let SfISelect = class SfISelect extends LitElement {
     }
     render() {
         console.log('rendering ', this.apiId, this.mode);
-        if (this.mode == "admin") {
+        if (this.mode == "multiselect-dropdown") {
+            return html `
+          
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <div class="SfISelectCAdmin">
+          <label part="input-label">${this.label}</label>
+          <div>
+            <div class="d-flex justify-center align-start flex-wrap">
+              <div class="d-flex" id="search-multiselect-selected"></div>
+              <div part="button-icon-small" class="d-flex hide material-icons color-gray pointer" id="search-multiselect-delete">delete</div>
+              <div class="d-flex flex-col">
+                <input part="input" id="search-multiselect-input" type="text" />
+                <select part="input-select" id="search-multiselect-select" class="hide"></select>
+              </div>
+            </div>
+          </div>
+          <div class="loader-element"></div>
+          <div class="d-flex justify-between">
+            <div class="lb"></div>
+            <div>
+              <div class="div-row-error div-row-submit gone">
+                <div part="errormsg" class="div-row-error-message"></div>
+              </div>
+              <div class="div-row-success div-row-submit gone">
+                <div part="successmsg" class="div-row-success-message"></div>
+              </div>
+            </div>
+            <div class="rb"></div>
+          </div>
+        </div>
+
+        `;
+        }
+        else if (this.mode == "admin") {
             return html `
         <div class="SfISelectCAdmin">
           <div class="d-flex justify-center">
@@ -476,6 +636,20 @@ SfISelect.styles = css `
 
     .SfISelectC > div > select{
       flex-grow: 1;
+    }
+
+    .align-start {
+      align-items: start;
+    }
+
+    .badge-multiselected {
+      font-size: 70%;
+      padding: 5px;
+      border-radius: 10px;
+      border: solid 1px #dddddd;
+      white-space: nowrap;
+      overflow: hidden !important;
+      width: 50px;
     }
 
     .table-action-button {
@@ -662,6 +836,9 @@ __decorate([
     property()
 ], SfISelect.prototype, "selectedTextPhrase", void 0);
 __decorate([
+    property()
+], SfISelect.prototype, "searchPhrase", void 0);
+__decorate([
     query('.SfISelectC select')
 ], SfISelect.prototype, "_sfSelect", void 0);
 __decorate([
@@ -679,6 +856,18 @@ __decorate([
 __decorate([
     query('#input-select')
 ], SfISelect.prototype, "_SfInputSelect", void 0);
+__decorate([
+    query('#search-multiselect-select')
+], SfISelect.prototype, "_SfSearchMultiselectSelect", void 0);
+__decorate([
+    query('#search-multiselect-input')
+], SfISelect.prototype, "_SfSearchMultiselectInput", void 0);
+__decorate([
+    query('#search-multiselect-delete')
+], SfISelect.prototype, "_SfSearchMultiselectDelete", void 0);
+__decorate([
+    query('#search-multiselect-selected')
+], SfISelect.prototype, "_SfSearchMultiselectSelected", void 0);
 __decorate([
     query('.div-row-error')
 ], SfISelect.prototype, "_SfRowError", void 0);
