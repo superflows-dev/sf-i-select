@@ -672,7 +672,8 @@ export class SfISelect extends LitElement {
     const retVals = [];
     var retString = "";
 
-    const xhr : any = (await this.prepareXhr({}, "https://"+this.apiId+".execute-api.us-east-1.amazonaws.com/test/list", this._SfLoader, null)) as any;
+    const authorization = btoa(Util.readCookie('email') + ":" + Util.readCookie('accessToken'));
+    const xhr : any = (await this.prepareXhr({}, "https://"+this.apiId+".execute-api.us-east-1.amazonaws.com/test/list", this._SfLoader, authorization)) as any;
     this._SfLoader.innerHTML = '';
     if(xhr.status == 200) {
       const jsonRespose = JSON.parse(xhr.responseText);
@@ -702,7 +703,8 @@ export class SfISelect extends LitElement {
   populateList = async () => {
 
     console.log('pop list');
-    const xhr : any = (await this.prepareXhr({}, "https://"+this.apiId+".execute-api.us-east-1.amazonaws.com/test/list", this._SfLoader, null)) as any;
+    const authorization = btoa(Util.readCookie('email') + ":" + Util.readCookie('accessToken'));
+    const xhr : any = (await this.prepareXhr({}, "https://"+this.apiId+".execute-api.us-east-1.amazonaws.com/test/list", this._SfLoader, authorization)) as any;
     this._SfLoader.innerHTML = '';
     if(xhr.status == 200) {
       const jsonRespose = JSON.parse(xhr.responseText);
